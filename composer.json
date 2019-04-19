@@ -1,0 +1,34 @@
+{
+    "name": "league/flysystem-encryption",
+    "description": "Flysystem adapter to encrypt files",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Guillaume RODRIGUEZ",
+            "email": "guiguidu31300@gmail.com"
+        }
+    ],
+    "require": {
+        "php": ">= 7.2",
+        "ext-sodium": "*",
+        "league/flysystem-adapter-decorator": "^1.0",
+        "paragonie/halite": "^4.1"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^8"
+    },
+    "autoload": {
+        "psr-4": {
+            "League\\Flysystem\\Encryption\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "League\\Flysystem\\Encryption\\Tests\\": "tests/"
+        }
+    },
+    "config": {
+        "bin-dir": "bin"
+    }
+}
