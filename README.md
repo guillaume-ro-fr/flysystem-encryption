@@ -3,9 +3,9 @@
 [![Author](http://img.shields.io/badge/author-@guillaume--ro--fr-blue.svg?style=flat-square)](https://github.com/guillaume-ro-fr)
 [![Build Status](https://img.shields.io/travis/guillaume-ro-fr/flysystem-encryption/master.svg?style=flat-square)](https://travis-ci.org/guillaume-ro-fr/flysystem-encryption)
 [![Coverage Status](https://img.shields.io/scrutinizer/coverage/g/guillaume-ro-fr/flysystem-encryption.svg?style=flat-square)](https://scrutinizer-ci.com/g/guillaume-ro-fr/flysystem-encryption)
-[![Quality Score](https://img.shields.io/scrutinizer/g/guillaume-ro-fr/flysystem-encryption?style=flat-square)](https://scrutinizer-ci.com/g/guillaume-ro-fr/flysystem-encryption)
+[![Quality Score](https://img.shields.io/scrutinizer/g/guillaume-ro-fr/flysystem-encryption.svg?style=flat-square)](https://scrutinizer-ci.com/g/guillaume-ro-fr/flysystem-encryption)
 [![Software License](https://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat-square)](LICENSE)
-[![Packagist Version](https://img.shields.io/packagist/v/league/flysystem-encryption?style=flat-square)](https://packagist.org/packages/league/flysystem-encryption)
+[![Packagist Version](https://img.shields.io/packagist/v/league/flysystem-encryption.svg?style=flat-square)](https://packagist.org/packages/league/flysystem-encryption)
 [![Total Downloads](https://img.shields.io/packagist/dt/league/flysystem-encryption.svg?style=flat-square)](https://packagist.org/packages/league/flysystem-encryption)
 
 This is a Flysystem adapter to encrypt files on existing Flysystem adapters.
