@@ -351,6 +351,10 @@ final class EncryptionAdapter implements AdapterInterface
             fclose($tmpResource);
 
             return false;
+        } finally {
+            // Reset pointer offset
+            fseek($inputStream, 0);
+            fseek($tmpResource, 0);
         }
 
         return $tmpResource;
