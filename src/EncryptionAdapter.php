@@ -342,7 +342,7 @@ final class EncryptionAdapter implements AdapterInterface
         }
 
         try {
-            $input = new ReadOnlyFile($inputStream);
+            $input = new WeakReadOnlyFile($inputStream); // ReadOnlyFile does not support the Guzzle Stream fopen() mode
             $output = new MutableFile($tmpResource);
             File::decrypt($input, $output, $this->encryptionKey);
         } catch (InvalidMessage $e) {
