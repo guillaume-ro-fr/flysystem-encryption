@@ -6,12 +6,15 @@ use League\Flysystem\AdapterDecorator\DecoratorTrait;
 use League\Flysystem\AdapterInterface;
 use League\Flysystem\Config;
 use League\Flysystem\Util;
+use ParagonIE\Halite\Alerts\CannotPerformOperation;
 use ParagonIE\Halite\Alerts\HaliteAlertInterface;
 use ParagonIE\Halite\Alerts\InvalidKey;
 use ParagonIE\Halite\Alerts\InvalidMessage;
 use ParagonIE\Halite\File;
+use ParagonIE\Halite\KeyFactory;
 use ParagonIE\Halite\Stream\MutableFile;
 use ParagonIE\Halite\Stream\ReadOnlyFile;
+use ParagonIE\Halite\Stream\WeakReadOnlyFile;
 use ParagonIE\Halite\Symmetric\EncryptionKey;
 use ParagonIE\HiddenString\HiddenString;
 
@@ -31,15 +34,20 @@ final class EncryptionAdapter implements AdapterInterface
     /**
      * EncryptionAdapter constructor.
      *
-     * @param AdapterInterface $adapter
-     * @param string           $encryptionKey
+     * @param AdapterInterface $adapter       Decorated adapter
+     * @param string           $encryptionKey File path or raw key
      *
      * @throws InvalidKey
+     * @throws CannotPerformOperation Throwned if the key file is not readable
      */
     public function __construct(AdapterInterface $adapter, string $encryptionKey)
     {
         $this->adapter = $adapter;
-        $this->encryptionKey = new EncryptionKey(new HiddenString($encryptionKey, true, true));
+        if (is_file($encryptionKey)) {
+            $this->encryptionKey = KeyFactory::loadEncryptionKey($encryptionKey);
+        } else {
+            $this->encryptionKey = new EncryptionKey(new HiddenString($encryptionKey, true, true));
+        }
     }
 
     /**
@@ -142,7 +150,7 @@ final class EncryptionAdapter implements AdapterInterface
         } catch (InvalidMessage $e) {
             return $result; // Invalid encryption key or unencrypted file
         }
-        
+
         if (false === $decryptedContents) {
             return false;
         }
