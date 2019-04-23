@@ -15,12 +15,12 @@ This is a Flysystem adapter to encrypt files on existing Flysystem adapters.
 # Installation
 
 ```bash
-composer require league/flysystem-encryption
+$ composer require league/flysystem-encryption
 ```
 
 # Bootstrap
 
-``` php
+```php
 <?php
 use League\Flysystem\Encryption\EncryptionAdapter;
 use League\Flysystem\Filesystem;
@@ -32,6 +32,11 @@ $myAdapter = new FlysystemAdapter();
 
 // Generate a new encryption key
 $encKey = random_bytes(SODIUM_CRYPTO_STREAM_KEYBYTES);
+// or save it in a file
+$encKey = KeyFactory::generateEncryptionKey();
+KeyFactory::save($encKey, '/path/outside/webroot/encryption.key');
+// or load it from a filepath
+$encKey = '/path/outside/webroot/encryption.key';
 
 $adapter = new EncryptionAdapter($myAdapter, $encKey);
 $filesystem = new Filesystem($adapter);
@@ -39,7 +44,7 @@ $filesystem = new Filesystem($adapter);
 
 ## Testing
 
-``` bash
+```bash
 $ composer test
 ```
 
