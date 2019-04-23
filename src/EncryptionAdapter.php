@@ -8,6 +8,7 @@ use League\Flysystem\Config;
 use League\Flysystem\Util;
 use ParagonIE\Halite\Alerts\HaliteAlertInterface;
 use ParagonIE\Halite\Alerts\InvalidKey;
+use ParagonIE\Halite\Alerts\InvalidMessage;
 use ParagonIE\Halite\File;
 use ParagonIE\Halite\Stream\MutableFile;
 use ParagonIE\Halite\Stream\ReadOnlyFile;
@@ -128,7 +129,7 @@ final class EncryptionAdapter implements AdapterInterface
     {
         $result = $this->adapter->read($path);
         if (false === $result) {
-            return false;
+            return $result;
         }
 
         $contents = $result['contents'];
@@ -136,7 +137,12 @@ final class EncryptionAdapter implements AdapterInterface
             return false;
         }
 
-        $decryptedContents = $this->decryptString($contents);
+        try {
+            $decryptedContents = $this->decryptString($contents);
+        } catch (InvalidMessage $e) {
+            return $result; // Invalid encryption key or unencrypted file
+        }
+        
         if (false === $decryptedContents) {
             return false;
         }
@@ -165,7 +171,12 @@ final class EncryptionAdapter implements AdapterInterface
             return false;
         }
 
-        $decryptedResource = $this->decryptStream($stream);
+        try {
+            $decryptedResource = $this->decryptStream($stream);
+        } catch (InvalidMessage $e) {
+            return $result; // Invalid encryption key or unencrypted file
+        }
+
         if (false === $decryptedResource) {
             return false;
         }
@@ -288,6 +299,8 @@ final class EncryptionAdapter implements AdapterInterface
      * @param string $contents The string to decrypt.
      *
      * @return string|false false on failure, the decrypted string on success.
+     *
+     * @throws InvalidMessage Throwned when the file cannot be decrypted
      */
     private function decryptString(string $contents)
     {
@@ -310,6 +323,8 @@ final class EncryptionAdapter implements AdapterInterface
      * @param resource $inputStream The resource to decrypt.
      *
      * @return resource|false false on failure, the decrypted stream on success.
+     *
+     * @throws InvalidMessage Throwned when the file cannot be decrypted
      */
     private function decryptStream($inputStream)
     {
@@ -322,6 +337,8 @@ final class EncryptionAdapter implements AdapterInterface
             $input = new ReadOnlyFile($inputStream);
             $output = new MutableFile($tmpResource);
             File::decrypt($input, $output, $this->encryptionKey);
+        } catch (InvalidMessage $e) {
+            throw $e; // Unencrypted file (?)
         } catch (HaliteAlertInterface $e) {
             fclose($tmpResource);
 
