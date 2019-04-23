@@ -12,13 +12,20 @@ This is a Flysystem adapter to encrypt files on existing Flysystem adapters.
 
 **This package is not tested for now !**
 
-# Installation
+## Installation
 
 ```bash
 $ composer require league/flysystem-encryption
 ```
 
-# Bootstrap
+## Bootstrap
+
+### Generate a private encryption key
+```bash
+$ bin/flysystem-encryption /path/outside/webroot/encryption.key
+```
+
+### Create your adapter
 
 ```php
 <?php
@@ -30,13 +37,13 @@ include __DIR__ . '/vendor/autoload.php';
 
 $myAdapter = new FlysystemAdapter();
 
-// Generate a new encryption key
+// Load the private key from a filepath with the previous command
+$encKey = '/path/outside/webroot/encryption.key';
+// or generate a new encryption key
 $encKey = random_bytes(SODIUM_CRYPTO_STREAM_KEYBYTES);
 // or save it in a file
 $encKey = KeyFactory::generateEncryptionKey();
 KeyFactory::save($encKey, '/path/outside/webroot/encryption.key');
-// or load it from a filepath
-$encKey = '/path/outside/webroot/encryption.key';
 
 $adapter = new EncryptionAdapter($myAdapter, $encKey);
 $filesystem = new Filesystem($adapter);

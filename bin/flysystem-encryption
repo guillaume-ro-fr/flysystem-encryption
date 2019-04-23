@@ -1,0 +1,44 @@
+#!/usr/bin/env php
+<?php
+
+if (file_exists(__DIR__.'/../../../autoload.php')) {
+    // Composer installation
+    require_once __DIR__.'/../../../autoload.php';
+} else {
+    require_once __DIR__.'/vendor/autoload.php';
+}
+
+use ParagonIE\Halite\KeyFactory;
+use Symfony\Component\Console\Application;
+use Symfony\Component\Console\Input\InputArgument;
+use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Console\Style\SymfonyStyle;
+
+/** @noinspection PhpUnhandledExceptionInspection */
+(new Application('flysystem-encryption', '1.0.0'))
+    ->register('generate-key')
+    ->addArgument('path', InputArgument::REQUIRED, 'File path of the private key')
+    ->setCode(
+        function (InputInterface $input, OutputInterface $output) {
+            $inputOutput = new SymfonyStyle($input, $output);
+
+            /** @var string|null $path */
+            $path = $input->getArgument('path');
+
+            try {
+                $encKey = KeyFactory::generateEncryptionKey();
+                KeyFactory::save($encKey, $path);
+                $inputOutput->success(sprintf('Private encryption key generated and stored in "%s"', realpath($path)));
+            } catch (Throwable $exception) {
+                $inputOutput->error(sprintf('Unable to generate the encryption key : %s', $exception->getMessage()));
+
+                return 1;
+            }
+
+            return 0;
+        }
+    )
+    ->getApplication()
+    ->setDefaultCommand('generate-key', true)
+    ->run();

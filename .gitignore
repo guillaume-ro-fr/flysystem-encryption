@@ -1,6 +1,7 @@
 composer.phar
 /vendor/
-/bin/
+/bin/*
+!/bin/flysystem-encryption
 .phpunit.result.cache
 /build/
 
