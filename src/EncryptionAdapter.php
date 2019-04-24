@@ -20,7 +20,7 @@ use ParagonIE\HiddenString\HiddenString;
 /**
  * Class EncryptionAdapter
  */
-final class EncryptionAdapter implements AdapterInterface
+class EncryptionAdapter implements AdapterInterface
 {
     use DecoratorTrait;
 
@@ -260,7 +260,7 @@ final class EncryptionAdapter implements AdapterInterface
      *
      * @return string|false false on failure, the encrypted string on success.
      */
-    private function encryptString(string $contents)
+    protected function encryptString(string $contents)
     {
         $resource = $this->getStreamFromString($contents);
         if (false === $resource) {
@@ -282,7 +282,7 @@ final class EncryptionAdapter implements AdapterInterface
      *
      * @return resource|false false on failure, the encrypted stream on success.
      */
-    private function encryptStream($inputStream)
+    protected function encryptStream($inputStream)
     {
         $tmpResource = \fopen('php://temp', 'r+b');
         if (false === $tmpResource) {
@@ -311,7 +311,7 @@ final class EncryptionAdapter implements AdapterInterface
      *
      * @throws InvalidMessage Throwned when the file cannot be decrypted
      */
-    private function decryptString(string $contents)
+    protected function decryptString(string $contents)
     {
         $resource = $this->getStreamFromString($contents);
         if (false === $resource) {
@@ -335,7 +335,7 @@ final class EncryptionAdapter implements AdapterInterface
      *
      * @throws InvalidMessage Throwned when the file cannot be decrypted
      */
-    private function decryptStream($inputStream)
+    protected function decryptStream($inputStream)
     {
         $tmpResource = \fopen('php://memory', 'r+b');
         if (false === $tmpResource) {
@@ -368,7 +368,7 @@ final class EncryptionAdapter implements AdapterInterface
      *
      * @return resource|false false on failure, the stream with the string contents on success.
      */
-    private function getStreamFromString(string $contents)
+    protected function getStreamFromString(string $contents)
     {
         $resource = \fopen('php://memory', 'r+b');
         if (false === $resource) {
