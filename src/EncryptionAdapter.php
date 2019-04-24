@@ -44,20 +44,10 @@ final class EncryptionAdapter implements AdapterInterface
         $this->adapter = $adapter;
         if ($encryptionKey instanceof EncryptionKey) {
             $this->encryptionKey = $encryptionKey;
-        } elseif (\is_string($encryptionKey)) {
-            if (\is_file($encryptionKey)) {
-                $this->encryptionKey = KeyFactory::loadEncryptionKey($encryptionKey);
-            } else {
-                $this->encryptionKey = new EncryptionKey(new HiddenString($encryptionKey, true, true));
-            }
+        } elseif (\is_file($encryptionKey)) {
+            $this->encryptionKey = KeyFactory::loadEncryptionKey($encryptionKey);
         } else {
-            throw new \InvalidArgumentException(
-                sprintf(
-                    'The encryption key type is incorrect.' .
-                    ' Accepted : string or ParagonIE\Halite\Symmetric\EncryptionKey, found %s',
-                    gettype($encryptionKey)
-                )
-            );
+            $this->encryptionKey = new EncryptionKey(new HiddenString($encryptionKey, true, true));
         }
     }
 
