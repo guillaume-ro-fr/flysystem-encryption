@@ -34,19 +34,31 @@ final class EncryptionAdapter implements AdapterInterface
     /**
      * EncryptionAdapter constructor.
      *
-     * @param AdapterInterface $adapter       Decorated adapter
-     * @param string           $encryptionKey File path or raw key
+     * @param AdapterInterface     $adapter       Decorated adapter
+     * @param string|EncryptionKey $encryptionKey File path, raw key or EncryptionKey instance
      *
      * @throws InvalidKey
      * @throws CannotPerformOperation Throwned if the key file is not readable
      */
-    public function __construct(AdapterInterface $adapter, string $encryptionKey)
+    public function __construct(AdapterInterface $adapter, $encryptionKey)
     {
         $this->adapter = $adapter;
-        if (is_file($encryptionKey)) {
-            $this->encryptionKey = KeyFactory::loadEncryptionKey($encryptionKey);
+        if ($encryptionKey instanceof EncryptionKey) {
+            $this->encryptionKey = $encryptionKey;
+        } elseif (\is_string($encryptionKey)) {
+            if (\is_file($encryptionKey)) {
+                $this->encryptionKey = KeyFactory::loadEncryptionKey($encryptionKey);
+            } else {
+                $this->encryptionKey = new EncryptionKey(new HiddenString($encryptionKey, true, true));
+            }
         } else {
-            $this->encryptionKey = new EncryptionKey(new HiddenString($encryptionKey, true, true));
+            throw new \InvalidArgumentException(
+                sprintf(
+                    'The encryption key type is incorrect.' .
+                    ' Accepted : string or ParagonIE\Halite\Symmetric\EncryptionKey, found %s',
+                    gettype($encryptionKey)
+                )
+            );
         }
     }
 
