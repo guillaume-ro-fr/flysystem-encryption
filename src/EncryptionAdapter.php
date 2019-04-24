@@ -153,7 +153,7 @@ final class EncryptionAdapter implements AdapterInterface
         }
 
         $contents = $result['contents'];
-        if (!is_string($contents)) {
+        if (!\is_string($contents)) {
             return false;
         }
 
@@ -187,7 +187,7 @@ final class EncryptionAdapter implements AdapterInterface
         }
 
         $stream = $result['stream'];
-        if (!is_resource($stream)) {
+        if (!\is_resource($stream)) {
             return false;
         }
 
@@ -283,7 +283,7 @@ final class EncryptionAdapter implements AdapterInterface
             return false;
         }
 
-        return stream_get_contents($encryptedStream);
+        return \stream_get_contents($encryptedStream);
     }
 
     /**
@@ -295,7 +295,7 @@ final class EncryptionAdapter implements AdapterInterface
      */
     private function encryptStream($inputStream)
     {
-        $tmpResource = fopen('php://temp', 'r+b');
+        $tmpResource = \fopen('php://temp', 'r+b');
         if (false === $tmpResource) {
             return false;
         }
@@ -305,7 +305,7 @@ final class EncryptionAdapter implements AdapterInterface
             $output = new MutableFile($tmpResource);
             File::encrypt($input, $output, $this->encryptionKey);
         } catch (HaliteAlertInterface $e) {
-            fclose($tmpResource);
+            \fclose($tmpResource);
 
             return false;
         }
@@ -334,7 +334,7 @@ final class EncryptionAdapter implements AdapterInterface
             return false;
         }
 
-        return stream_get_contents($decryptedStream);
+        return \stream_get_contents($decryptedStream);
     }
 
     /**
@@ -348,7 +348,7 @@ final class EncryptionAdapter implements AdapterInterface
      */
     private function decryptStream($inputStream)
     {
-        $tmpResource = fopen('php://memory', 'r+b');
+        $tmpResource = \fopen('php://memory', 'r+b');
         if (false === $tmpResource) {
             return false;
         }
@@ -360,13 +360,13 @@ final class EncryptionAdapter implements AdapterInterface
         } catch (InvalidMessage $e) {
             throw $e; // Unencrypted file (?)
         } catch (HaliteAlertInterface $e) {
-            fclose($tmpResource);
+            \fclose($tmpResource);
 
             return false;
         } finally {
             // Reset pointer offset
-            fseek($inputStream, 0);
-            fseek($tmpResource, 0);
+            \fseek($inputStream, 0);
+            \fseek($tmpResource, 0);
         }
 
         return $tmpResource;
@@ -381,13 +381,13 @@ final class EncryptionAdapter implements AdapterInterface
      */
     private function getStreamFromString(string $contents)
     {
-        $resource = fopen('php://memory', 'r+b');
+        $resource = \fopen('php://memory', 'r+b');
         if (false === $resource) {
             return false;
         }
 
-        fwrite($resource, $contents);
-        rewind($resource);
+        \fwrite($resource, $contents);
+        \rewind($resource);
 
         return $resource;
     }
