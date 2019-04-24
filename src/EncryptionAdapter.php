@@ -13,7 +13,6 @@ use ParagonIE\Halite\Alerts\InvalidMessage;
 use ParagonIE\Halite\File;
 use ParagonIE\Halite\KeyFactory;
 use ParagonIE\Halite\Stream\MutableFile;
-use ParagonIE\Halite\Stream\ReadOnlyFile;
 use ParagonIE\Halite\Stream\WeakReadOnlyFile;
 use ParagonIE\Halite\Symmetric\EncryptionKey;
 use ParagonIE\HiddenString\HiddenString;
@@ -301,7 +300,7 @@ final class EncryptionAdapter implements AdapterInterface
         }
 
         try {
-            $input = new ReadOnlyFile($inputStream);
+            $input = new WeakReadOnlyFile($inputStream);
             $output = new MutableFile($tmpResource);
             File::encrypt($input, $output, $this->encryptionKey);
         } catch (HaliteAlertInterface $e) {
