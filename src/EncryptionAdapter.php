@@ -7,6 +7,7 @@ use League\Flysystem\AdapterInterface;
 use League\Flysystem\Config;
 use League\Flysystem\Util;
 use ParagonIE\Halite\Alerts\CannotPerformOperation;
+use ParagonIE\Halite\Alerts\FileAccessDenied;
 use ParagonIE\Halite\Alerts\HaliteAlertInterface;
 use ParagonIE\Halite\Alerts\InvalidKey;
 use ParagonIE\Halite\File;
@@ -279,12 +280,22 @@ class EncryptionAdapter implements AdapterInterface
         }
 
         try {
-            $input = new WeakReadOnlyFile($inputStream);
-            $output = new MutableFile($tmpResource);
-            File::encrypt($input, $output, $this->encryptionKey);
-            $input->reset();
-            $output->reset();
-        } catch (HaliteAlertInterface $e) {
+            try {
+                // ReadOnlyFile does not support the Guzzle Stream fopen() mode
+                $input = new WeakReadOnlyFile($inputStream);
+                $output = new MutableFile($tmpResource);
+                File::encrypt($input, $output, $this->encryptionKey);
+                $input->reset();
+                $output->reset();
+            } catch (FileAccessDenied $ignored) {
+                $tempInputStream = \fopen('php://memory', 'r+b');
+                \stream_copy_to_stream($inputStream, $tempInputStream);
+                \fseek($tempInputStream, \ftell($inputStream));
+                \fclose($tmpResource);
+                $tmpResource = $this->encryptStream($tempInputStream);
+                \fclose($tempInputStream);
+            }
+        } catch (HaliteAlertInterface $ignored) {
             \rewind($inputStream);
             \fclose($tmpResource);
 
@@ -331,12 +342,22 @@ class EncryptionAdapter implements AdapterInterface
         }
 
         try {
-            $input = new WeakReadOnlyFile($inputStream); // ReadOnlyFile does not support the Guzzle Stream fopen() mode
-            $output = new MutableFile($tmpResource);
-            File::decrypt($input, $output, $this->encryptionKey);
-            $input->reset();
-            $output->reset();
-        } catch (HaliteAlertInterface $e) {
+            try {
+                // ReadOnlyFile does not support the Guzzle Stream fopen() mode
+                $input = new WeakReadOnlyFile($inputStream);
+                $output = new MutableFile($tmpResource);
+                File::decrypt($input, $output, $this->encryptionKey);
+                $input->reset();
+                $output->reset();
+            } catch (FileAccessDenied $ignored) {
+                $tempInputStream = \fopen('php://memory', 'r+b');
+                \stream_copy_to_stream($inputStream, $tempInputStream);
+                \fseek($tempInputStream, \ftell($inputStream));
+                \fclose($tmpResource);
+                $tmpResource = $this->decryptStream($tempInputStream);
+                \fclose($tempInputStream);
+            }
+        } catch (HaliteAlertInterface $ignored) {
             \rewind($inputStream);
             \fclose($tmpResource);
 
