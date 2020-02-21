@@ -1,16 +1,17 @@
 language: php
-sudo: false
+os: linux
 
 php:
-  - '7.2'
-  - '7.3'
+    - '7.2'
+    - '7.3'
 
 install:
-  - travis_retry composer install --no-interaction
+    - php -m | grep -q sodium || pecl install libsodium
+    - travis_retry composer install --no-interaction
 
 script:
-  - bin/phpunit --coverage-text --coverage-clover=coverage.xml tests
+    - bin/phpunit --coverage-text --coverage-clover=coverage.xml tests
 
 after_script:
-  - wget https://scrutinizer-ci.com/ocular.phar
-  - php ocular.phar code-coverage:upload --format=php-clover coverage.xml
+    - wget https://scrutinizer-ci.com/ocular.phar
+    - php ocular.phar code-coverage:upload --format=php-clover coverage.xml
