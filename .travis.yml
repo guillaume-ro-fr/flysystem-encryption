@@ -1,12 +1,19 @@
 language: php
 os: linux
+dist: bionic
+
+cache:
+    directories:
+        - $HOME/libsodium
 
 php:
     - '7.2'
     - '7.3'
 
 install:
-    - php -m | grep -q sodium || pecl install libsodium
+    - export PKG_CONFIG_PATH=$HOME/libsodium/lib/pkgconfig:$PKG_CONFIG_PATH
+    - export LD_LIBRARY_PATH=$HOME/libsodium/lib:$LD_LIBRARY_PATH
+    - php -m | grep -q sodium || (./.travis-ci/travis-install-libsodium.sh && pecl install libsodium)
     - travis_retry composer install --no-interaction
 
 script:
