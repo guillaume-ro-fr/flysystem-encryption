@@ -300,7 +300,9 @@ class EncryptionAdapter implements AdapterInterface
             }
         } catch (HaliteAlertInterface $ignored) {
             \rewind($inputStream);
-            \fclose($tmpResource);
+            if (\is_resource($tmpResource)) {
+                \fclose($tmpResource);
+            }
 
             return false;
         }
@@ -365,7 +367,9 @@ class EncryptionAdapter implements AdapterInterface
             }
         } catch (HaliteAlertInterface $ignored) {
             \rewind($inputStream);
-            \fclose($tmpResource);
+            if (\is_resource($tmpResource)) {
+                \fclose($tmpResource);
+            }
 
             return false;
         }
