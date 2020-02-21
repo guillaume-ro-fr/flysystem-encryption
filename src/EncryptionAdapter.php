@@ -289,6 +289,9 @@ class EncryptionAdapter implements AdapterInterface
                 $output->reset();
             } catch (FileAccessDenied $ignored) {
                 $tempInputStream = \fopen('php://memory', 'r+b');
+                if (false === $tempInputStream) {
+                    return false;
+                }
                 \stream_copy_to_stream($inputStream, $tempInputStream);
                 \fseek($tempInputStream, \ftell($inputStream));
                 \fclose($tmpResource);
@@ -351,6 +354,9 @@ class EncryptionAdapter implements AdapterInterface
                 $output->reset();
             } catch (FileAccessDenied $ignored) {
                 $tempInputStream = \fopen('php://memory', 'r+b');
+                if (false === $tempInputStream) {
+                    return false;
+                }
                 \stream_copy_to_stream($inputStream, $tempInputStream);
                 \fseek($tempInputStream, \ftell($inputStream));
                 \fclose($tmpResource);
