@@ -56,7 +56,7 @@ class EncryptionAdapter implements AdapterInterface
      *
      * @param string $path
      * @param string $contents
-     * @param Config $config Config object
+     * @param Config $config   Config object
      *
      * @return array|false false on failure file meta data on success
      */
@@ -75,7 +75,7 @@ class EncryptionAdapter implements AdapterInterface
      *
      * @param string   $path
      * @param resource $resource
-     * @param Config   $config Config object
+     * @param Config   $config   Config object
      *
      * @return array|false false on failure file meta data on success
      */
@@ -94,7 +94,7 @@ class EncryptionAdapter implements AdapterInterface
      *
      * @param string $path
      * @param string $contents
-     * @param Config $config Config object
+     * @param Config $config   Config object
      *
      * @return array|false false on failure file meta data on success
      */
@@ -113,7 +113,7 @@ class EncryptionAdapter implements AdapterInterface
      *
      * @param string   $path
      * @param resource $resource
-     * @param Config   $config Config object
+     * @param Config   $config   Config object
      *
      * @return array|false false on failure file meta data on success
      */
