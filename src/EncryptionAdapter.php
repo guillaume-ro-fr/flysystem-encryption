@@ -2,6 +2,7 @@
 
 namespace League\Flysystem\Encryption;
 
+use League\Flysystem\Adapter\AbstractAdapter;
 use League\Flysystem\AdapterDecorator\DecoratorTrait;
 use League\Flysystem\AdapterInterface;
 use League\Flysystem\Config;
@@ -20,7 +21,7 @@ use ParagonIE\HiddenString\HiddenString;
 /**
  * Class EncryptionAdapter
  */
-class EncryptionAdapter implements AdapterInterface
+class EncryptionAdapter extends AbstractAdapter
 {
     use DecoratorTrait;
 
