@@ -12,6 +12,7 @@ composer.phar
 .idea/**/dictionaries
 .idea/**/shelf
 .idea/**/php.xml
+.idea/**/symfony2.xml
 
 # Generated files
 .idea/**/contentModel.xml
