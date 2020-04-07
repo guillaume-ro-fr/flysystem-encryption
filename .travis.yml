@@ -7,8 +7,8 @@ cache:
         - $HOME/libsodium
 
 php:
-    - '7.2'
     - '7.3'
+    - '7.4'
 
 install:
     - export PKG_CONFIG_PATH=$HOME/libsodium/lib/pkgconfig:$PKG_CONFIG_PATH
