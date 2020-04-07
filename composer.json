@@ -13,11 +13,11 @@
         "php": ">= 7.2",
         "ext-sodium": "*",
         "league/flysystem-adapter-decorator": "^1.0",
-        "paragonie/halite": "^4.1",
+        "paragonie/halite": "^4.4",
         "symfony/console": "^4.2 || ^5.0"
     },
     "require-dev": {
-        "phpunit/phpunit": "^8"
+        "phpunit/phpunit": "^9"
     },
     "autoload": {
         "psr-4": {

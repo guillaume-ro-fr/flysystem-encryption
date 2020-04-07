@@ -1,6 +1,6 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="EncryptionAdapterTest" type="PHPUnitRunConfigurationType" factoryName="PHPUnit">
-    <TestRunner class="League\Flysystem\Encryption\Tests\EncryptionAdapterTest" file="$PROJECT_DIR$/tests/EncryptionAdapterTest.php" scope="Class" />
+    <TestRunner class="League\Flysystem\Encryption\Tests\EncryptionAdapterTest" file="$PROJECT_DIR$/tests/EncryptionAdapterTest.php" scope="XML" />
     <method v="2" />
   </configuration>
 </component>

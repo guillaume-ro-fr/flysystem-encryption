@@ -16,8 +16,6 @@ use ParagonIE\Halite\KeyFactory;
 use ParagonIE\Halite\Stream\WeakReadOnlyFile;
 use ParagonIE\Halite\Symmetric\EncryptionKey;
 use PHPUnit\Framework\TestCase;
-use Prophecy\Argument;
-use Prophecy\Prophecy\ObjectProphecy;
 
 /**
  * Class EncryptionAdapterTest
@@ -63,18 +61,18 @@ final class EncryptionAdapterTest extends TestCase
      */
     public function testWriteStream(): void
     {
-        /** @var ObjectProphecy $prophecy */
-        $prophecy = $this->prophesize(AdapterInterface::class);
-        /** @var AdapterInterface $decoratedAdapter */
-        $decoratedAdapter = $prophecy->reveal();
+        $decoratedAdapter = $this->createMock(AdapterInterface::class);
+
         $encryptionAdapter = new EncryptionAdapter($decoratedAdapter, $this->encryptionKey);
 
         $tmpFile = $this->getTempFile();
         $config = new Config();
-        $prophecy
-            ->writeStream('bar/foo.txt', Argument::that([self::class, 'checkEncryptedStream']), $config)
-            ->willReturn([])
-            ->shouldBeCalledTimes(1);
+
+        $decoratedAdapter
+            ->expects($this->once())
+            ->method('writeStream')
+            ->with('bar/foo.txt', $this->callback([self::class, 'checkEncryptedStream']), $config)
+            ->willReturn([]);
 
         $result = $encryptionAdapter->writeStream('bar/foo.txt', $tmpFile, $config);
         $this->assertIsArray($result, 'The adapter result is an array.');
@@ -82,8 +80,6 @@ final class EncryptionAdapterTest extends TestCase
         if (\is_resource($tmpFile)) {
             fclose($tmpFile);
         }
-
-        $prophecy->checkProphecyMethodsPredictions();
     }
 
     public function testEncryptedReadStream(): void
