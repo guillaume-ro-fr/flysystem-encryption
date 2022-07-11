@@ -2,9 +2,12 @@
 
 namespace League\Flysystem\Encryption\Tests;
 
-use League\Flysystem\AdapterInterface;
+use League\Flysystem\AdapterTestUtilities\FilesystemAdapterTestCase;
 use League\Flysystem\Config;
 use League\Flysystem\Encryption\EncryptionAdapter;
+use League\Flysystem\FilesystemAdapter;
+use League\Flysystem\FilesystemException;
+use League\Flysystem\Local\LocalFilesystemAdapter;
 use ParagonIE\Halite\Alerts\CannotPerformOperation;
 use ParagonIE\Halite\Alerts\FileAccessDenied;
 use ParagonIE\Halite\Alerts\FileError;
@@ -13,30 +16,16 @@ use ParagonIE\Halite\Alerts\InvalidKey;
 use ParagonIE\Halite\Alerts\InvalidType;
 use ParagonIE\Halite\Halite;
 use ParagonIE\Halite\KeyFactory;
+use ParagonIE\Halite\Stream\ReadOnlyFile;
 use ParagonIE\Halite\Stream\WeakReadOnlyFile;
-use ParagonIE\Halite\Symmetric\EncryptionKey;
-use PHPUnit\Framework\TestCase;
 
 /**
  * Class EncryptionAdapterTest
  */
-final class EncryptionAdapterTest extends TestCase
+final class EncryptionAdapterTest extends FilesystemAdapterTestCase
 {
-    /** @var EncryptionKey */
-    private $encryptionKey;
-
     /**
-     * @throws CannotPerformOperation
-     * @throws InvalidKey
-     */
-    protected function setUp(): void
-    {
-        parent::setUp();
-        $this->encryptionKey = KeyFactory::generateEncryptionKey();
-    }
-
-    /**
-     * @param $resource
+     * @param string|resource $resource
      *
      * @return bool
      *
@@ -45,8 +34,9 @@ final class EncryptionAdapterTest extends TestCase
      * @throws FileError
      * @throws FileModified
      * @throws InvalidType
+     * @throws \SodiumException
      */
-    public static function checkEncryptedStream($resource): bool
+    protected static function isEncrypted($resource): bool
     {
         $file = new WeakReadOnlyFile($resource);
         $file->reset();
@@ -56,109 +46,78 @@ final class EncryptionAdapterTest extends TestCase
     }
 
     /**
-     * @throws CannotPerformOperation
      * @throws InvalidKey
+     * @throws CannotPerformOperation
+     * @throws \SodiumException
      */
-    public function testWriteStream(): void
+    protected static function createFilesystemAdapter(): FilesystemAdapter
     {
-        $decoratedAdapter = $this->createMock(AdapterInterface::class);
+        $encryptionKey = KeyFactory::generateEncryptionKey();
+        $decoratedAdapter = new LocalFilesystemAdapter(__DIR__.DIRECTORY_SEPARATOR.'tmp'.DIRECTORY_SEPARATOR);
 
-        $encryptionAdapter = new EncryptionAdapter($decoratedAdapter, $this->encryptionKey);
+        return new EncryptionAdapter($decoratedAdapter, $encryptionKey);
+    }
 
-        $tmpFile = $this->getTempFile();
-        $config = new Config();
+    /**
+     * @test
+     *
+     * @throws InvalidType
+     * @throws FilesystemException
+     * @throws \SodiumException
+     * @throws FileModified
+     * @throws FileAccessDenied
+     * @throws FileError
+     * @throws CannotPerformOperation
+     */
+    public function writingAnEncryptedFile(): void
+    {
+        $adapter = $this->adapter();
+        $writeStream = stream_with_contents('contents');
 
-        $decoratedAdapter
-            ->expects($this->once())
-            ->method('writeStream')
-            ->with('bar/foo.txt', $this->callback([self::class, 'checkEncryptedStream']), $config)
-            ->willReturn([]);
+        $adapter->writeStream('path.txt', $writeStream, new Config());
 
-        $result = $encryptionAdapter->writeStream('bar/foo.txt', $tmpFile, $config);
-        $this->assertIsArray($result, 'The adapter result is an array.');
-
-        if (\is_resource($tmpFile)) {
-            fclose($tmpFile);
+        if (\is_resource($writeStream)) {
+            \fclose($writeStream);
         }
-    }
 
-    public function testEncryptedReadStream(): void
-    {
-        $this->markTestSkipped('Not implemented yet.');
-    }
+        $fileExists = $adapter->fileExists('path.txt');
+        $this->assertTrue($fileExists);
 
-    public function testUnencryptedReadStream(): void
-    {
-        $this->markTestSkipped('Not implemented yet.');
-    }
-
-    public function testGetMimetype(): void
-    {
-        $this->markTestSkipped('Not implemented yet.');
-    }
-
-    public function testUpdate(): void
-    {
-        $this->markTestSkipped('Not implemented yet.');
-    }
-
-    public function testEncryptedRead(): void
-    {
-        $this->markTestSkipped('Not implemented yet.');
-    }
-
-    public function testUnecryptedRead(): void
-    {
-        $this->markTestSkipped('Not implemented yet.');
-    }
-
-    public function testGetSize(): void
-    {
-        $this->markTestSkipped('Not implemented yet.');
-    }
-
-    public function testUpdateStream(): void
-    {
-        $this->markTestSkipped('Not implemented yet.');
-    }
-
-    public function testWrite(): void
-    {
-        $this->markTestSkipped('Not implemented yet.');
-    }
-
-    public function testGetMetadata(): void
-    {
-        $this->markTestSkipped('Not implemented yet.');
+        /** @var EncryptionAdapter $adapter */
+        $adapter = $this->adapter();
+        $encryptedStream = \stream_with_contents($adapter->getDecoratedAdapted()->read('path.txt'));
+        $fileIsEncrypted = self::isEncrypted($encryptedStream);
+        $this->assertTrue($fileIsEncrypted);
     }
 
     /**
-     * @return resource
+     * @test
+     *
+     * @throws InvalidType
+     * @throws FilesystemException
+     * @throws \SodiumException
+     * @throws FileModified
+     * @throws FileAccessDenied
+     * @throws FileError
+     * @throws CannotPerformOperation
      */
-    private function getTempFile()
+    public function writingAnEncryptedStream(): void
     {
-        $size = (int)($this->getMemoryLimit() * 1.5);
+        $adapter = $this->adapter();
+        $writeStream = stream_with_contents('contents');
 
-        $tmpFile = tmpfile();
-        fseek($tmpFile, $size);
-        fprintf($tmpFile, 'a');
-        fflush($tmpFile);
-        fseek($tmpFile, 0);
+        $adapter->writeStream('path.txt', $writeStream, new Config());
 
-        return $tmpFile;
-    }
+        if (\is_resource($writeStream)) {
+            \fclose($writeStream);
+        }
 
-    /**
-     * @return int
-     */
-    private function getMemoryLimit(): int
-    {
-        return (int)preg_replace_callback(
-            '/^(\-?\d+)([BKMG]?)$/i',
-            static function ($match) {
-                return $match[1] * (1024 ** strpos('BKMG', $match[2]));
-            },
-            strtoupper(ini_get('memory_limit'))
-        );
+        $fileExists = $adapter->fileExists('path.txt');
+        $this->assertTrue($fileExists);
+
+        /** @var EncryptionAdapter $adapter */
+        $adapter = $this->adapter();
+        $fileIsEncrypted = self::isEncrypted($adapter->getDecoratedAdapted()->readStream('path.txt'));
+        $this->assertTrue($fileIsEncrypted);
     }
 }

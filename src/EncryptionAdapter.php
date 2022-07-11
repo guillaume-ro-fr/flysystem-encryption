@@ -2,11 +2,14 @@
 
 namespace League\Flysystem\Encryption;
 
-use League\Flysystem\Adapter\AbstractAdapter;
-use League\Flysystem\AdapterDecorator\DecoratorTrait;
-use League\Flysystem\AdapterInterface;
 use League\Flysystem\Config;
-use League\Flysystem\Util;
+use League\Flysystem\Encryption\Exception\EncryptionException;
+use League\Flysystem\FileAttributes;
+use League\Flysystem\FilesystemAdapter;
+use League\Flysystem\FilesystemException;
+use League\Flysystem\UnableToReadFile;
+use League\Flysystem\UnableToRetrieveMetadata;
+use League\Flysystem\UnableToWriteFile;
 use ParagonIE\Halite\Alerts\CannotPerformOperation;
 use ParagonIE\Halite\Alerts\FileAccessDenied;
 use ParagonIE\Halite\Alerts\HaliteAlertInterface;
@@ -21,26 +24,21 @@ use ParagonIE\HiddenString\HiddenString;
 /**
  * Class EncryptionAdapter
  */
-class EncryptionAdapter extends AbstractAdapter
+class EncryptionAdapter implements FilesystemAdapter
 {
-    use DecoratorTrait;
-
-    /** @var AdapterInterface */
-    private $adapter;
-
-    /** @var EncryptionKey */
-    private $encryptionKey;
+    private FilesystemAdapter $adapter;
+    private EncryptionKey $encryptionKey;
 
     /**
      * EncryptionAdapter constructor.
      *
-     * @param AdapterInterface     $adapter       Decorated adapter
+     * @param FilesystemAdapter    $adapter       Decorated adapter
      * @param string|EncryptionKey $encryptionKey File path, raw key or EncryptionKey instance
      *
      * @throws InvalidKey
-     * @throws CannotPerformOperation Throwned if the key file is not readable
+     * @throws CannotPerformOperation|\SodiumException Throwned if the key file is not readable
      */
-    public function __construct(AdapterInterface $adapter, $encryptionKey)
+    public function __construct(FilesystemAdapter $adapter, EncryptionKey|string $encryptionKey)
     {
         $this->adapter = $adapter;
         if ($encryptionKey instanceof EncryptionKey) {
@@ -52,80 +50,51 @@ class EncryptionAdapter extends AbstractAdapter
         }
     }
 
+    public function getDecoratedAdapted(): FilesystemAdapter
+    {
+        return $this->adapter;
+    }
+
     /**
      * Write a new file.
      *
      * @param string $path
      * @param string $contents
-     * @param Config $config   Config object
+     * @param Config $config Config object
      *
-     * @return array|false false on failure file meta data on success
+     * @throws EncryptionException
+     * @throws UnableToWriteFile
+     * @throws FilesystemException
      */
-    public function write($path, $contents, Config $config)
+    public function write(string $path, string $contents, Config $config): void
     {
         $encryptedContents = $this->encryptString($contents);
         if (false === $encryptedContents) {
-            return false;
+            throw new EncryptionException();
         }
 
-        return $this->adapter->write($path, $encryptedContents, $config);
+        $this->adapter->write($path, $encryptedContents, $config);
     }
 
     /**
      * Write a new file using a stream.
      *
      * @param string   $path
-     * @param resource $resource
-     * @param Config   $config   Config object
+     * @param resource $contents
+     * @param Config   $config Config object
      *
-     * @return array|false false on failure file meta data on success
+     * @throws EncryptionException
+     * @throws UnableToWriteFile
+     * @throws FilesystemException
      */
-    public function writeStream($path, $resource, Config $config)
+    public function writeStream(string $path, $contents, Config $config): void
     {
-        $encryptedResource = $this->encryptStream($resource);
+        $encryptedResource = $this->encryptStream($contents);
         if (false === $encryptedResource) {
-            return false;
+            throw new EncryptionException();
         }
 
-        return $this->adapter->writeStream($path, $encryptedResource, $config);
-    }
-
-    /**
-     * Update a file.
-     *
-     * @param string $path
-     * @param string $contents
-     * @param Config $config   Config object
-     *
-     * @return array|false false on failure file meta data on success
-     */
-    public function update($path, $contents, Config $config)
-    {
-        $encryptedContents = $this->encryptString($contents);
-        if (false === $encryptedContents) {
-            return false;
-        }
-
-        return $this->adapter->update($path, $encryptedContents, $config);
-    }
-
-    /**
-     * Update a file using a stream.
-     *
-     * @param string   $path
-     * @param resource $resource
-     * @param Config   $config   Config object
-     *
-     * @return array|false false on failure file meta data on success
-     */
-    public function updateStream($path, $resource, Config $config)
-    {
-        $encryptedResource = $this->encryptStream($resource);
-        if (false === $encryptedResource) {
-            return false;
-        }
-
-        return $this->adapter->updateStream($path, $encryptedResource, $config);
+        $this->adapter->writeStream($path, $encryptedResource, $config);
     }
 
     /**
@@ -133,93 +102,62 @@ class EncryptionAdapter extends AbstractAdapter
      *
      * @param string $path
      *
-     * @return array|false
+     * @return string File content
+     *
+     * @throws EncryptionException
+     * @throws UnableToReadFile
+     * @throws FilesystemException
      */
-    public function read($path)
+    public function read(string $path): string
     {
         $result = $this->adapter->read($path);
-        if (false === $result) {
-            return $result;
-        }
-
-        $contents = $result['contents'];
-        if (!\is_string($contents)) {
-            return false;
-        }
-
-        $decryptedContents = $this->decryptString($contents);
+        $decryptedContents = $this->decryptString($result);
         if (false === $decryptedContents) {
-            return false;
+            throw new EncryptionException();
         }
 
-        $result['contents'] = $decryptedContents;
-
-        return $result;
+        return $decryptedContents;
     }
 
     /**
      * Read a file as a stream.
      *
-     * @param string $path
+     * @return resource File content as stream.
      *
-     * @return array|false
+     * @throws EncryptionException
+     * @throws UnableToReadFile
+     * @throws FilesystemException
      */
-    public function readStream($path)
+    public function readStream(string $path)
     {
         $result = $this->adapter->readStream($path);
-        if (false === $result) {
-            return false;
-        }
-
-        $stream = $result['stream'];
-        if (!\is_resource($stream)) {
-            return false;
-        }
-
-        $decryptedResource = $this->decryptStream($stream);
+        $decryptedResource = $this->decryptStream($result);
         if (false === $decryptedResource) {
-            return false;
+            throw new EncryptionException();
         }
 
-        $result['stream'] = $decryptedResource;
-
-        return $result;
+        return $decryptedResource;
     }
 
     /**
-     * Get all the meta data of a file or directory.
+     * Get the size of a file.
      *
      * @param string $path
      *
-     * @return array|false
-     */
-    public function getMetadata($path)
-    {
-        $metadata = $this->adapter->getMetadata($path);
-        if (false === $metadata) {
-            return false;
-        }
-
-        unset($metadata['size'], $metadata['mimetype']);
-
-        return $metadata;
-    }
-
-    /**
-     * Get all the meta data of a file or directory.
+     * @return FileAttributes
      *
-     * @param string $path
-     *
-     * @return array|false
+     * @throws UnableToRetrieveMetadata
+     * @throws FilesystemException
      */
-    public function getSize($path)
+    public function fileSize(string $path): FileAttributes
     {
-        $decryptedContent = $this->read($path);
-        if (false === $decryptedContent) {
-            return false;
-        }
+        try {
+            $file = $this->read($path);
 
-        return ['size' => Util::contentSize($decryptedContent['contents'])];
+            return new FileAttributes($path, \strlen($file));
+        } catch (UnableToReadFile | EncryptionException) {
+            throw UnableToRetrieveMetadata::create($path, 'file');
+        }
     }
 
     /**
@@ -227,21 +165,69 @@ class EncryptionAdapter extends AbstractAdapter
      *
      * @param string $path
      *
-     * @return array|false
+     * @return FileAttributes
+     *
+     * @throws UnableToRetrieveMetadata
+     * @throws FilesystemException
      */
-    public function getMimetype($path)
+    public function mimeType(string $path): FileAttributes
     {
-        return $this->adapter->getMimetype($path);
+        return $this->adapter->mimeType($path);
     }
 
-    /**
-     * Get the decorated adapter.
-     *
-     * @return AdapterInterface
-     */
-    protected function getDecoratedAdapter(): AdapterInterface
+    public function fileExists(string $path): bool
     {
-        return $this->adapter;
+        return $this->adapter->fileExists($path);
+    }
+
+    public function directoryExists(string $path): bool
+    {
+        return $this->adapter->directoryExists($path);
+    }
+
+    public function delete(string $path): void
+    {
+        $this->adapter->delete($path);
+    }
+
+    public function deleteDirectory(string $path): void
+    {
+        $this->adapter->deleteDirectory($path);
+    }
+
+    public function createDirectory(string $path, Config $config): void
+    {
+        $this->adapter->createDirectory($path, $config);
+    }
+
+    public function setVisibility(string $path, string $visibility): void
+    {
+        $this->adapter->setVisibility($path, $visibility);
+    }
+
+    public function visibility(string $path): FileAttributes
+    {
+        return $this->adapter->visibility($path);
+    }
+
+    public function lastModified(string $path): FileAttributes
+    {
+        return $this->adapter->lastModified($path);
+    }
+
+    public function listContents(string $path, bool $deep): iterable
+    {
+        return $this->adapter->listContents($path, $deep);
+    }
+
+    public function move(string $source, string $destination, Config $config): void
+    {
+        $this->adapter->move($source, $destination, $config);
+    }
+
+    public function copy(string $source, string $destination, Config $config): void
+    {
+        $this->adapter->copy($source, $destination, $config);
     }
 
     /**
@@ -251,7 +237,7 @@ class EncryptionAdapter extends AbstractAdapter
      *
      * @return string|false false on failure, the encrypted string on success.
      */
-    protected function encryptString(string $contents)
+    protected function encryptString(string $contents): string|false
     {
         $resource = $this->getStreamFromString($contents);
         if (false === $resource) {
@@ -282,13 +268,13 @@ class EncryptionAdapter extends AbstractAdapter
 
         try {
             try {
-                // ReadOnlyFile does not support the Guzzle Stream fopen() mode
+                // ReadOnlyFile does not support Guzzle Stream fopen() mode
                 $input = new WeakReadOnlyFile($inputStream);
                 $output = new MutableFile($tmpResource);
                 File::encrypt($input, $output, $this->encryptionKey);
                 $input->reset();
                 $output->reset();
-            } catch (FileAccessDenied $ignored) {
+            } catch (FileAccessDenied) {
                 $tempInputStream = \fopen('php://memory', 'r+b');
                 if (false === $tempInputStream) {
                     return false;
@@ -299,7 +285,7 @@ class EncryptionAdapter extends AbstractAdapter
                 $tmpResource = $this->encryptStream($tempInputStream);
                 \fclose($tempInputStream);
             }
-        } catch (HaliteAlertInterface $ignored) {
+        } catch (HaliteAlertInterface | \SodiumException) {
             \rewind($inputStream);
             if (\is_resource($tmpResource)) {
                 \fclose($tmpResource);
@@ -318,7 +304,7 @@ class EncryptionAdapter extends AbstractAdapter
      *
      * @return string|false false on failure, the decrypted string on success.
      */
-    protected function decryptString(string $contents)
+    protected function decryptString(string $contents): string|false
     {
         $resource = $this->getStreamFromString($contents);
         if (false === $resource) {
@@ -349,13 +335,13 @@ class EncryptionAdapter extends AbstractAdapter
 
         try {
             try {
-                // ReadOnlyFile does not support the Guzzle Stream fopen() mode
+                // ReadOnlyFile does not support Guzzle Stream fopen() mode
                 $input = new WeakReadOnlyFile($inputStream);
                 $output = new MutableFile($tmpResource);
                 File::decrypt($input, $output, $this->encryptionKey);
                 $input->reset();
                 $output->reset();
-            } catch (FileAccessDenied $ignored) {
+            } catch (FileAccessDenied) {
                 $tempInputStream = \fopen('php://memory', 'r+b');
                 if (false === $tempInputStream) {
                     return false;
@@ -366,7 +352,7 @@ class EncryptionAdapter extends AbstractAdapter
                 $tmpResource = $this->decryptStream($tempInputStream);
                 \fclose($tempInputStream);
             }
-        } catch (HaliteAlertInterface $ignored) {
+        } catch (HaliteAlertInterface | \SodiumException) {
             \rewind($inputStream);
             if (\is_resource($tmpResource)) {
                 \fclose($tmpResource);
@@ -397,4 +383,5 @@ class EncryptionAdapter extends AbstractAdapter
 
         return $resource;
     }
+
 }

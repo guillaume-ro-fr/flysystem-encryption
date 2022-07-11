@@ -1,14 +1,14 @@
 language: php
 os: linux
-dist: bionic
+dist: focal
 
 cache:
     directories:
         - $HOME/libsodium
 
 php:
-    - '7.3'
-    - '7.4'
+    - '8.0'
+    - '8.1'
 
 install:
     - export PKG_CONFIG_PATH=$HOME/libsodium/lib/pkgconfig:$PKG_CONFIG_PATH
